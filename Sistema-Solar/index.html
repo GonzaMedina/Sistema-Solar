@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Three.js Solar System</title>
+    <style>
+      html, body, canvas {
+        height: 100%;
+      }
+      
+      body {
+        margin: 0;
+      }
+      
+      canvas {
+        width: 100%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+</head>
+
+<body>
+  <canvas id="canvas">Sorry, Your Browser doesn't support the HTML Canvas API</canvas>
+  <noscript>Sorry, Your Browser doesn't support Javascript</noscript>
+  <script type="module" charset="utf-8">
+    import * as THREE from "https://cdn.skypack.dev/three@0.134.0/build/three.module.js";
+    import {OrbitControls} from "https://cdn.skypack.dev/three@0.134.0/examples/jsm/controls/OrbitControls.js";
+    import {GUI} from "https://cdn.skypack.dev/lil-gui@0.14.0";
+
+    function main() {
+      const canvas = document.getElementById("canvas"),
+      renderer = new THREE.WebGLRenderer({canvas}),
+      fov = 75,
+      aspect = canvas.clientWidth / canvas.clientHeight,
+      near = 0.1,
+      far = 100,
+      camera = new THREE.PerspectiveCamera(fov, aspect, near, far),
+      scene = new THREE.Scene(),
+      objects = [],
+      solarSystem = new THREE.Object3D(),
+      earthOrbit = new THREE.Object3D(),
+      moonOrbit = new THREE.Object3D(),
+      sphere = new THREE.SphereGeometry(1, 30, 30),
+      sunMaterial = new THREE.MeshPhongMaterial({emissive: 0xFFFF00}),
+      sun = new THREE.Mesh(sphere, sunMaterial),
+      earthMaterial = new THREE.MeshPhongMaterial({color: 0x2233FF, emissive: 0x112244}),
+      earth = new THREE.Mesh(sphere, earthMaterial),
+      moonMaterial = new THREE.MeshPhongMaterial({color: 0x888888, emissive: 0x222222}),
+      moon = new THREE.Mesh(sphere, moonMaterial),
+      GridAxesHelper = class {
+        constructor(obj, unit=10) {
+          this.axes = new THREE.AxesHelper();
+          this.grid = new THREE.GridHelper(unit, unit);
+          this.__GridAxesHelper_visible = false;
+          this.axes.material.depthTest = false;
+          this.axes.renderOrder = 2;
+          this.axes.visible = false;
+          this.grid.material.depthTest = false;
+          this.grid.renderOrder = 1;
+          this.grid.visible = false;
+          obj.add(this.axes);
+          obj.add(this.grid);
+        }
+        
+        get visible() {
+          return this.__GridAxesHelper_visible;
+        }
+        
+        set visible(value) {
+          this.__GridAxesHelper_visible = value;
+          this.axes.visible = value;
+          this.grid.visible = value;
+        }
+      },
+      gui = new GUI(),
+      light = new THREE.PointLight(0xFFFFFF, 3);
+      camera.position.set(0, 20, 0);
+      camera.up.set(0, 0, 1);
+      camera.lookAt(0, 0, 0);
+      sun.scale.set(5, 5, 5);
+      moon.scale.set(0.5, 0.5, 0.5);
+      earthOrbit.position.x = 10;
+      moonOrbit.position.x = 2;
+      objects.push(solarSystem);
+      objects.push(earthOrbit);
+      objects.push(moonOrbit);
+      solarSystem.add(sun);
+      solarSystem.add(earthOrbit);
+      earthOrbit.add(earth);
+      earthOrbit.add(moonOrbit);
+      moonOrbit.add(moon);
+      makeGridAxesHelper(sun, "Sun");
+      makeGridAxesHelper(solarSystem, "Solar System");
+      makeGridAxesHelper(earth, "Earth");
+      makeGridAxesHelper(earthOrbit, "Earth Orbit");
+      makeGridAxesHelper(moon, "Moon");
+      makeGridAxesHelper(moonOrbit, "Moon Orbit");
+      scene.add(solarSystem);
+      scene.add(light);
+      renderer.render(scene, camera);
+      const controls = new OrbitControls(camera, canvas);
+      requestAnimationFrame(render);
+      
+      function render(time) {
+        time /= 1000;
+        objects.forEach(e => {e.rotation.y = time});
+        if(setResolution()) {
+          camera.aspect = canvas.clientWidth / canvas.clientHeight;
+          camera.updateProjectionMatrix();
+        }
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+      }
+      
+      function setResolution() {
+        const width = canvas.clientWidth * window.devicePixelRatio,
+        height = canvas.clientHeight * window.devicePixelRatio,
+        need = canvas.width != width || canvas.height != height;
+        if(need) renderer.setSize(width, height, false);
+        return need;
+      }
+      
+      function makeGridAxesHelper(obj, title, unit=10) {
+        gui.add(new GridAxesHelper(obj, unit), "visible").name(title);
+      }
+    }
+    
+    main();
+  </script>
+</body>
+
+</html>
